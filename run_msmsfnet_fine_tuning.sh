@@ -1,0 +1,2 @@
+python main_msmsfnet.py --lr 1e-6 --max_epoch 60 --start_epoch 0 --train_dataset_dir /media/user/data/datasets/bsds_voc/data --test_dataset_dir ./data --trainlist bsds_pascal_train_pair.lst --train_batch_size 1 --itersize 10 --test_batch_size 1 --lr_stepsize 20 --lr_gamma 0.1 --weight_decay 1e-12 --print_freq 1000 --output output-msmsfnet-imagenet-pretrained-wd12-16 --organize_lr --pretrained_imagenet ./output-imagenet-msmsfnet/epoch-90-checkpoint.pth --alphaw 0.1 --betaw 0.01
+

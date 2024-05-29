@@ -1,0 +1,78 @@
+import torch
+
+def organize_opt_lr(net, args, use_sgd=True):
+    state_dict=net.state_dict()
+    keys_list=list(state_dict.keys())
+    convweights=[]
+    convbiases=[]
+    dsnweights=[]
+    dsnbiases=[]
+    fuseweights=[]
+    fusebiases=[]
+    for keys0 in keys_list:
+        if keys0[0:4]=='conv' and keys0[-6:]=='weight':
+            convweights.append(keys0)
+        elif keys0[0:4]=='conv' and keys0[-4:]=='bias':
+            convbiases.append(keys0)
+        elif keys0[0:4]=='scor' and keys0[-6:]=='weight':
+            dsnweights.append(keys0)
+        elif keys0[0:4]=='scor' and keys0[-4:]=='bias':
+            dsnbiases.append(keys0)
+        elif keys0[0:4]=='fuse' and keys0[-6:]=='weight':
+            fuseweights.append(keys0)
+        elif keys0[0:4]=='fuse' and keys0[-4:]=='bias':
+            fusebiases.append(keys0)
+        else:
+            print('error, parameters missing!')
+            print(keys0)
+            return None
+            
+
+    parameters=dict()
+    parameters['convweights']=[]
+    parameters['convbiases']=[]
+    parameters['dsnweights']=[]
+    parameters['dsnbiases']=[]
+    parameters['fuseweights']=[]
+    parameters['fusebiases']=[]
+    for pname, p in net.named_parameters():
+        if pname in convweights:
+            parameters['convweights'].append(p)
+        elif pname in convbiases:
+            parameters['convbiases'].append(p)
+        elif pname in dsnweights:
+            parameters['dsnweights'].append(p)
+        elif pname in dsnbiases:
+            parameters['dsnbiases'].append(p)
+        elif pname in fuseweights:
+            parameters['fuseweights'].append(p)
+        elif pname in fusebiases:
+            parameters['fusebiases'].append(p)
+        else:
+            print('error, parameters missing')
+            print(pname)
+            return None
+            
+    
+    if use_sgd:
+        print('organize opt lr SGD')
+        opt=torch.optim.SGD([
+            {'params': parameters['convweights'], 'lr': args.lr, 'weight_decay': args.weight_decay},
+            {'params': parameters['convbiases'], 'lr': args.lr*2, 'weight_decay': 0.},
+            {'params': parameters['dsnweights'], 'lr': args.lr*args.alphaw, 'weight_decay': args.weight_decay},
+            {'params': parameters['dsnbiases'], 'lr': args.lr*args.alphaw*2, 'weight_decay': 0.},
+            {'params': parameters['fuseweights'], 'lr': args.lr*args.betaw, 'weight_decay': args.weight_decay},
+            {'params': parameters['fusebiases'], 'lr': args.lr*args.betaw*2, 'weight_decay': 0.}
+        ], lr=args.lr, momentum=args.momentum, weight_decay=args.weight_decay)
+    else:
+        print('organize opt lr Adam')
+        opt=torch.optim.Adam([
+            {'params': parameters['convweights'], 'lr': args.lr, 'weight_decay': args.weight_decay},
+            {'params': parameters['convbiases'], 'lr': args.lr*2, 'weight_decay': 0.},
+            {'params': parameters['dsnweights'], 'lr': args.lr*args.alphaw, 'weight_decay': args.weight_decay},
+            {'params': parameters['dsnbiases'], 'lr': args.lr*args.alphaw*2, 'weight_decay': 0.},
+            {'params': parameters['fuseweights'], 'lr': args.lr*args.betaw, 'weight_decay': args.weight_decay},
+            {'params': parameters['fusebiases'], 'lr': args.lr*args.betaw*2, 'weight_decay': 0.},
+        ], lr= args.lr, weight_decay=args.weight_decay)
+        
+    return opt
